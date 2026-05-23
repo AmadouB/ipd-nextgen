@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Mode clair — fond F2F3F5, brand pasteur */
+    --background: 220 11% 96%;
+    --foreground: 222 80% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 80% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 80% 10%;
+    --primary: 202 100% 41%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 213 60% 90%;
+    --secondary-foreground: 222 80% 15%;
+    --muted: 220 11% 92%;
+    --muted-foreground: 222 20% 40%;
+    --accent: 209 65% 80%;
+    --accent-foreground: 222 80% 15%;
+    --destructive: 358 76% 59%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 5% 85%;
+    --input: 220 5% 88%;
+    --ring: 202 100% 41%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Mode sombre futuriste §7.5 — fond #0A1530 */
+    --background: 222 76% 11%;
+    --foreground: 220 11% 96%;
+    --card: 222 64% 18%;
+    --card-foreground: 220 11% 96%;
+    --popover: 222 64% 18%;
+    --popover-foreground: 220 11% 96%;
+    --primary: 202 100% 50%;
+    --primary-foreground: 222 76% 11%;
+    --secondary: 222 50% 25%;
+    --secondary-foreground: 220 11% 96%;
+    --muted: 222 50% 22%;
+    --muted-foreground: 209 35% 70%;
+    --accent: 222 50% 30%;
+    --accent-foreground: 220 11% 96%;
+    --destructive: 358 80% 60%;
+    --destructive-foreground: 220 11% 96%;
+    --border: 222 50% 25%;
+    --input: 222 50% 22%;
+    --ring: 202 100% 50%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Typographie §8 */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+
+  /* Focus visible accessibilité §9.2 */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-brand-pasteur ring-offset-2 ring-offset-background;
+  }
+
+  /* Skip to content */
+  .skip-link {
+    @apply absolute left-2 top-2 z-50 -translate-y-20 rounded bg-brand-nuit px-4 py-2 text-white focus:translate-y-0;
+  }
+
+  /* Tabular numbers pour KPI */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Shimmer skeleton */
+  .skeleton {
+    @apply relative overflow-hidden bg-muted;
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+  }
+
+  /* Reduced motion §9.2 */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  .text-shadow-glow {
+    text-shadow: 0 0 12px rgba(0, 137, 208, 0.4);
+  }
+
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/40;
+  }
+  .dark .glass {
+    @apply bg-ink-surface/60 backdrop-blur-md border border-white/10;
+  }
+
+  .ipd-card {
+    @apply rounded-xl border bg-card text-card-foreground shadow-sm;
+  }
+}

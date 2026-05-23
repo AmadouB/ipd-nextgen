@@ -1,0 +1,11 @@
+{
+  "name": "NextGen IPD",
+  "short_name": "NextGen IPD",
+  "description": "Portail Exécutif & Coordination Inter-Entités — Institut Pasteur de Dakar",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#052A62",
+  "theme_color": "#0089D0",
+  "lang": "fr",
+  "icons": []
+}
