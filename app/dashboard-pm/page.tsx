@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   AlertTriangle,
   Briefcase,
@@ -7,11 +8,17 @@ import {
   Clock,
   FileSignature,
   Flag,
+  PlusCircle,
   Target,
   XCircle,
 } from "lucide-react";
+import { RowActions } from "@/components/crud/row-actions";
+import { EditModal, type EditField } from "@/components/crud/edit-modal";
+import { DeleteConfirm } from "@/components/crud/delete-confirm";
+import { toast } from "@/lib/store/toast-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PageHeader } from "@/components/layout/page-header";
 import { KpiCard } from "@/components/kpi/kpi-card";
@@ -34,6 +41,25 @@ export default function DashboardPMPage() {
   const risks = RISKS.filter((r) => r.projectId === project.id);
   const milestones = MILESTONES.filter((m) => m.projectId === project.id);
   const fiche = FICHES.find((f) => f.entityId === project.entityId);
+
+  // CRUD modals state pour le registre des risques
+  const [riskEdit, setRiskEdit] = useState<any | null>(null);
+  const [riskDelete, setRiskDelete] = useState<any | null>(null);
+  const [riskAddOpen, setRiskAddOpen] = useState(false);
+
+  const riskFields: EditField[] = [
+    { key: "description", label: "Description du risque", type: "textarea", required: true },
+    { key: "probability", label: "Probabilité (1-5)", type: "number", required: true },
+    { key: "impact", label: "Impact (1-5)", type: "number", required: true },
+    { key: "mitigation", label: "Action de mitigation", type: "textarea", required: true },
+    { key: "ownerInitials", label: "Responsable (initiales)", type: "text" },
+    { key: "dueDate", label: "Échéance", type: "date" },
+    { key: "status", label: "Statut", type: "select", required: true, options: [
+      { value: "ouvert", label: "Ouvert" },
+      { value: "mitige", label: "Mitigé" },
+      { value: "ferme", label: "Fermé" },
+    ]},
+  ];
 
   const conformity = [
     { label: "Charte projet signée", done: true },
@@ -170,10 +196,15 @@ export default function DashboardPMPage() {
         {/* Registre risques §14.2.3 */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-brand-pasteur" /> Registre des risques de
-              proximité
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-brand-pasteur" /> Registre des risques de
+                proximité
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={() => setRiskAddOpen(true)}>
+                <PlusCircle className="h-3 w-3" /> Ajouter
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -186,6 +217,7 @@ export default function DashboardPMPage() {
                   <th className="py-2 pl-2">Mitigation</th>
                   <th className="py-2 px-2">Owner</th>
                   <th className="py-2 pl-2">Échéance</th>
+                  <th className="py-2 px-1 w-8"></th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -210,12 +242,45 @@ export default function DashboardPMPage() {
                     <td className="py-2 pl-2 text-[10px]">
                       {new Date(r.dueDate).toLocaleDateString("fr-FR")}
                     </td>
+                    <td className="py-2 px-1 text-right">
+                      <RowActions
+                        label={r.code}
+                        onEdit={() => setRiskEdit(r)}
+                        onRefresh={() => toast.info("Score recalculé", `${r.code} · P×I = ${r.probability * r.impact}.`)}
+                        onDuplicate={() => toast.success("Risque dupliqué", `Copie de ${r.code}.`)}
+                        onDelete={() => setRiskDelete(r)}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </CardContent>
         </Card>
+
+        <EditModal
+          open={!!riskEdit}
+          onOpenChange={(v) => !v && setRiskEdit(null)}
+          title="Modifier le risque"
+          description={`${riskEdit?.code} · projet ${project.code}`}
+          fields={riskFields.map((f) => ({ ...f, defaultValue: riskEdit?.[f.key] }))}
+          onSave={(v) => toast.success("Risque mis à jour", v.description?.slice(0, 60))}
+        />
+        <EditModal
+          open={riskAddOpen}
+          onOpenChange={setRiskAddOpen}
+          title="Ajouter un risque"
+          description={`Nouveau risque sur projet ${project.code}`}
+          fields={riskFields}
+          onSave={(v) => toast.success("Risque ajouté", v.description?.slice(0, 60))}
+        />
+        <DeleteConfirm
+          open={!!riskDelete}
+          onOpenChange={(v) => !v && setRiskDelete(null)}
+          title="Supprimer ce risque ?"
+          itemLabel={riskDelete?.code + " — " + riskDelete?.description?.slice(0, 60)}
+          onConfirm={() => toast.danger("Risque supprimé", riskDelete?.code)}
+        />
 
         {/* Jalons du projet */}
         <Card>

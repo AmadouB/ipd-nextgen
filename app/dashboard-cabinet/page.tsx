@@ -259,11 +259,19 @@ export default function DashboardCabinetPage() {
                         </div>
                       )}
                       {items.map((e) => (
-                        <button
+                        <div
                           key={e.id}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => openDrill({ type: "escalade", escaladeId: e.id })}
+                          onKeyDown={(ev) => {
+                            if (ev.key === "Enter" || ev.key === " ") {
+                              ev.preventDefault();
+                              openDrill({ type: "escalade", escaladeId: e.id });
+                            }
+                          }}
                           className={cn(
-                            "block w-full text-left rounded-md border bg-card p-2.5 text-xs space-y-1.5 shadow-sm hover:shadow-md hover:border-brand-pasteur/40 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-pasteur",
+                            "rounded-md border bg-card p-2.5 text-xs space-y-1.5 shadow-sm hover:shadow-md hover:border-brand-pasteur/40 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-pasteur",
                             e.urgency === "haute" && "border-feedback-danger/40"
                           )}
                         >
@@ -291,7 +299,7 @@ export default function DashboardCabinetPage() {
                             <span>{e.submittedInitials}</span>
                             <span>{relativeTimeFR(e.submittedAt)}</span>
                           </div>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   </div>

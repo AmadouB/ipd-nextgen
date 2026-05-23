@@ -25,6 +25,9 @@ import { ENTITIES } from "@/lib/mock-data/entities";
 import { cn, relativeTimeFR } from "@/lib/utils";
 import { useDrillDownStore } from "@/lib/store/drilldown-store";
 import { toast } from "@/lib/store/toast-store";
+import { RowActions } from "@/components/crud/row-actions";
+import { DeleteConfirm } from "@/components/crud/delete-confirm";
+import { EditModal, type EditField } from "@/components/crud/edit-modal";
 
 const KANBAN_COLUMNS: EscaladeStatus[] = [
   "nouveau",
@@ -38,6 +41,27 @@ export default function EscaladesPage() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const openDrill = useDrillDownStore((s) => s.open);
+  const [editTarget, setEditTarget] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+
+  const escaladeFields: EditField[] = [
+    { key: "title", label: "Titre court", type: "text", required: true },
+    { key: "description", label: "Description détaillée", type: "textarea", required: true },
+    { key: "urgency", label: "Urgence", type: "select", required: true, options: [
+      { value: "haute", label: "Haute" },
+      { value: "moyenne", label: "Moyenne" },
+      { value: "basse", label: "Basse" },
+    ]},
+    { key: "status", label: "Statut", type: "select", required: true, options: [
+      { value: "nouveau", label: "Nouveau" },
+      { value: "qualifie", label: "Qualifié" },
+      { value: "preparation_ag", label: "Préparation AG" },
+      { value: "decide", label: "Décidé" },
+      { value: "clos", label: "Clos" },
+    ]},
+    { key: "decisionExpectedBy", label: "Décision attendue avant", type: "date" },
+    { key: "impactIfUnresolved", label: "Impact si non-traité", type: "textarea" },
+  ];
 
   const filtered = ESCALADES.filter(
     (e) =>
@@ -104,14 +128,35 @@ export default function EscaladesPage() {
                     {items.map((e) => {
                       const entity = ENTITIES.find((en) => en.id === e.entityId);
                       return (
-                        <button
+                        <div
                           key={e.id}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => openDrill({ type: "escalade", escaladeId: e.id })}
+                          onKeyDown={(ev) => {
+                            if (ev.key === "Enter" || ev.key === " ") {
+                              ev.preventDefault();
+                              openDrill({ type: "escalade", escaladeId: e.id });
+                            }
+                          }}
                           className={cn(
-                            "block w-full text-left rounded-md border bg-card p-3 text-xs space-y-2 shadow-sm hover:shadow-md hover:border-brand-pasteur/40 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-pasteur",
+                            "relative rounded-md border bg-card p-3 text-xs space-y-2 shadow-sm hover:shadow-md hover:border-brand-pasteur/40 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-pasteur",
                             e.urgency === "haute" && "border-l-4 border-l-feedback-danger"
                           )}
                         >
+                          <div className="absolute top-1 right-1">
+                            <RowActions
+                              label={e.code}
+                              onEdit={() => setEditTarget(e)}
+                              onRefresh={() =>
+                                toast.info("Statut resynchronisé", `${e.code} — workflow §18 réévalué.`)
+                              }
+                              onDuplicate={() =>
+                                toast.success("Escalade dupliquée", `Brouillon créé depuis ${e.code}.`)
+                              }
+                              onDelete={() => setDeleteTarget(e)}
+                            />
+                          </div>
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <Badge
                               variant={
@@ -155,7 +200,7 @@ export default function EscaladesPage() {
                               </span>
                             </div>
                           </div>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -167,6 +212,28 @@ export default function EscaladesPage() {
       </Card>
 
       <EscaladeWizard open={open} onOpenChange={setOpen} />
+
+      <EditModal
+        open={!!editTarget}
+        onOpenChange={(v) => !v && setEditTarget(null)}
+        title="Modifier l'escalade"
+        description={`${editTarget?.code} · auto-save CRDT`}
+        fields={escaladeFields.map((f) => {
+          const v = editTarget?.[f.key];
+          // dates en ISO → format date input
+          const dv = f.type === "date" && v ? String(v).slice(0, 10) : v;
+          return { ...f, defaultValue: dv };
+        })}
+        onSave={(v) => toast.success("Escalade mise à jour", v.title?.slice(0, 60))}
+      />
+      <DeleteConfirm
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title="Supprimer cette escalade ?"
+        description="L'historique de décision sera conservé dans l'audit log §29.4."
+        itemLabel={deleteTarget?.code + " — " + deleteTarget?.title?.slice(0, 60)}
+        onConfirm={() => toast.danger("Escalade supprimée", deleteTarget?.code)}
+      />
     </>
   );
 }

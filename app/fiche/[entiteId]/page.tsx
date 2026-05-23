@@ -29,6 +29,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/layout/page-header";
 import { EscaladeWizard } from "@/components/fiche/escalade-wizard";
 import { SignatureDialog } from "@/components/fiche/signature-dialog";
+import { RowActions } from "@/components/crud/row-actions";
+import { DeleteConfirm } from "@/components/crud/delete-confirm";
+import { EditModal, type EditField } from "@/components/crud/edit-modal";
 import { ENTITIES } from "@/lib/mock-data/entities";
 import { ficheByEntity } from "@/lib/mock-data/fiches";
 import { HOSHIN_PILLARS } from "@/lib/mock-data/hoshin";
@@ -392,6 +395,20 @@ function Info({ label, value }: { label: string; value: string }) {
 function SectionPriorites({ fiche }: { fiche: any }) {
   const HORIZON_LABEL = { court: "< 1 mois", moyen: "1-3 mois", long: "> 3 mois" };
   const HORIZON_COLOR = { court: "destructive", moyen: "soft-warning", long: "soft" } as const;
+  const [editTarget, setEditTarget] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+
+  const priorityFields: EditField[] = [
+    { key: "description", label: "Description de la priorité", type: "textarea", required: true, placeholder: "Sécuriser la chaîne d'approvisionnement…" },
+    { key: "horizon", label: "Horizon", type: "select", required: true, options: [
+      { value: "court", label: "Court terme (< 1 mois)" },
+      { value: "moyen", label: "Moyen terme (1-3 mois)" },
+      { value: "long", label: "Long terme (> 3 mois)" },
+    ]},
+    { key: "pillarId", label: "Pilier Hoshin", type: "select", required: true, options: HOSHIN_PILLARS.map((h) => ({ value: h.id, label: `${h.code} — ${h.title}` })) },
+    { key: "progress", label: "Avancement (%)", type: "number", placeholder: "0-100" },
+  ];
 
   return (
     <Card>
@@ -400,11 +417,7 @@ function SectionPriorites({ fiche }: { fiche: any }) {
           <CardTitle className="text-base flex items-center gap-2">
             <Target className="h-4 w-4 text-brand-pasteur" /> Priorités de la période
           </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toast.info("Ajouter une ligne", "Formulaire d'ajout (démo) — sauvegarde automatique CRDT.")}
-          >
+          <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
             <PlusCircle className="h-3 w-3" /> Ajouter
           </Button>
         </div>
@@ -440,11 +453,45 @@ function SectionPriorites({ fiche }: { fiche: any }) {
                     </span>
                   </div>
                 </div>
+                <RowActions
+                  label={`Priorité P${p.num}`}
+                  onEdit={() => setEditTarget(p)}
+                  onRefresh={() => toast.info("Actualisation", `Recalcul de l'avancement de la priorité ${p.num} depuis les activités liées.`)}
+                  onDelete={() => setDeleteTarget(p)}
+                />
               </div>
             </div>
           );
         })}
       </CardContent>
+
+      <EditModal
+        open={!!editTarget}
+        onOpenChange={(v) => !v && setEditTarget(null)}
+        title="Modifier la priorité"
+        description={`P${editTarget?.num} · §17.1.2 — Auto-save CRDT activée`}
+        fields={priorityFields.map((f) => ({ ...f, defaultValue: editTarget?.[f.key] }))}
+        onSave={(v) => toast.success("Priorité mise à jour", v.description?.slice(0, 60))}
+      />
+      <EditModal
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        title="Ajouter une priorité"
+        description="§17.1.2 — 3 à 5 priorités max par période"
+        fields={priorityFields}
+        onSave={(v) => toast.success("Priorité ajoutée", v.description?.slice(0, 60))}
+      />
+      <DeleteConfirm
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title="Supprimer cette priorité ?"
+        description="Les activités rattachées resteront, mais ne seront plus liées à une priorité."
+        itemLabel={deleteTarget?.description}
+        onConfirm={() => {
+          toast.danger("Priorité supprimée", `P${deleteTarget.num} — entrée audit log`);
+          setDeleteTarget(null);
+        }}
+      />
     </Card>
   );
 }
@@ -455,16 +502,29 @@ function SectionActivites({ fiche }: { fiche: any }) {
     completee: "soft-success",
     en_retard: "soft-danger",
   } as const;
+  const [editTarget, setEditTarget] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+
+  const activityFields: EditField[] = [
+    { key: "title", label: "Intitulé de l'activité", type: "text", required: true },
+    { key: "priorityId", label: "Priorité liée", type: "select", required: true, options: fiche.priorities.map((p: any) => ({ value: p.id, label: `P${p.num} — ${p.description.slice(0, 40)}` })) },
+    { key: "state", label: "État", type: "select", required: true, options: [
+      { value: "en_cours", label: "En cours" },
+      { value: "completee", label: "Complétée" },
+      { value: "en_retard", label: "En retard" },
+    ]},
+    { key: "progress", label: "Avancement (%)", type: "number", placeholder: "0-100" },
+    { key: "ownerInitials", label: "Responsable (initiales)", type: "text", placeholder: "IF" },
+    { key: "dueDate", label: "Échéance", type: "date" },
+  ];
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Activités en cours</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toast.info("Ajouter une ligne", "Formulaire d'ajout (démo) — sauvegarde automatique CRDT.")}
-          >
+          <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
             <PlusCircle className="h-3 w-3" /> Ajouter
           </Button>
         </div>
@@ -479,11 +539,12 @@ function SectionActivites({ fiche }: { fiche: any }) {
               <th className="py-2 px-2 w-32">Avancement</th>
               <th className="py-2 px-2">Owner</th>
               <th className="py-2 px-2">Échéance</th>
+              <th className="py-2 px-1 w-8"></th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {fiche.activities.map((a: any) => (
-              <tr key={a.id} className="hover:bg-muted/40">
+              <tr key={a.id} className="hover:bg-muted/40 group">
                 <td className="py-2.5 pr-2 font-medium">{a.title}</td>
                 <td className="py-2.5 px-2 text-muted-foreground">P{fiche.priorities.find((p:any)=>p.id===a.priorityId)?.num ?? "—"}</td>
                 <td className="py-2.5 px-2">
@@ -501,11 +562,44 @@ function SectionActivites({ fiche }: { fiche: any }) {
                 <td className="py-2.5 px-2 text-xs">
                   {new Date(a.dueDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
                 </td>
+                <td className="py-2.5 px-1 text-right">
+                  <RowActions
+                    label={a.title.slice(0, 30)}
+                    onEdit={() => setEditTarget(a)}
+                    onRefresh={() => toast.info("Synchro PMS", `Activité ${a.title.slice(0,30)} re-synchronisée depuis MS Project.`)}
+                    onDuplicate={() => toast.success("Activité dupliquée", `Copie de "${a.title.slice(0,40)}".`)}
+                    onDelete={() => setDeleteTarget(a)}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </CardContent>
+
+      <EditModal
+        open={!!editTarget}
+        onOpenChange={(v) => !v && setEditTarget(null)}
+        title="Modifier l'activité"
+        description="§17.1.3 — Une activité doit toujours être liée à une priorité"
+        fields={activityFields.map((f) => ({ ...f, defaultValue: editTarget?.[f.key] }))}
+        onSave={(v) => toast.success("Activité mise à jour", v.title?.slice(0, 60))}
+      />
+      <EditModal
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        title="Ajouter une activité"
+        description="§17.1.3 — Lier obligatoirement à une priorité"
+        fields={activityFields}
+        onSave={(v) => toast.success("Activité ajoutée", v.title?.slice(0, 60))}
+      />
+      <DeleteConfirm
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title="Supprimer cette activité ?"
+        itemLabel={deleteTarget?.title}
+        onConfirm={() => toast.danger("Activité supprimée", deleteTarget?.title?.slice(0, 60))}
+      />
     </Card>
   );
 }
@@ -551,16 +645,25 @@ function SectionKpis({ fiche }: { fiche: any }) {
 }
 
 function SectionRisques({ risks }: { risks: any[] }) {
+  const [editTarget, setEditTarget] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+
+  const riskFields: EditField[] = [
+    { key: "description", label: "Description du risque", type: "textarea", required: true },
+    { key: "probability", label: "Probabilité (1-5)", type: "number", required: true, hint: "1 = très faible, 5 = quasi certaine" },
+    { key: "impact", label: "Impact (1-5)", type: "number", required: true, hint: "1 = mineur, 5 = critique" },
+    { key: "mitigation", label: "Action de mitigation", type: "textarea", required: true },
+    { key: "ownerInitials", label: "Responsable (initiales)", type: "text" },
+    { key: "dueDate", label: "Échéance de mitigation", type: "date" },
+  ];
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Risques, défis et blocages</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toast.info("Ajouter une ligne", "Formulaire d'ajout (démo) — sauvegarde automatique CRDT.")}
-          >
+          <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
             <PlusCircle className="h-3 w-3" /> Ajouter
           </Button>
         </div>
@@ -607,19 +710,72 @@ function SectionRisques({ risks }: { risks: any[] }) {
                   <span>Échéance : {new Date(r.dueDate).toLocaleDateString("fr-FR")}</span>
                 </div>
               </div>
+              <RowActions
+                label={r.code}
+                onEdit={() => setEditTarget(r)}
+                onRefresh={() => toast.info("Recalcul du score", `Score P×I=${r.probability * r.impact} mis à jour.`)}
+                onDuplicate={() => toast.success("Risque dupliqué", `Copie de ${r.code}.`)}
+                onDelete={() => setDeleteTarget(r)}
+              />
             </div>
           </div>
         ))}
       </CardContent>
+
+      <EditModal
+        open={!!editTarget}
+        onOpenChange={(v) => !v && setEditTarget(null)}
+        title="Modifier le risque"
+        description={`${editTarget?.code} · §17.1.5 — Un risque niveau Élevé doit avoir une action de mitigation`}
+        fields={riskFields.map((f) => ({ ...f, defaultValue: editTarget?.[f.key] }))}
+        onSave={(v) => toast.success("Risque mis à jour", v.description?.slice(0, 60))}
+      />
+      <EditModal
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        title="Ajouter un risque"
+        description="§17.1.5 — Probabilité × Impact détermine la criticité"
+        fields={riskFields}
+        onSave={(v) => toast.success("Risque ajouté", v.description?.slice(0, 60))}
+      />
+      <DeleteConfirm
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title="Supprimer ce risque ?"
+        description="L'historique de mitigation sera conservé dans l'audit log."
+        itemLabel={deleteTarget?.code + " — " + deleteTarget?.description?.slice(0, 60)}
+        onConfirm={() => toast.danger("Risque supprimé", deleteTarget?.code)}
+      />
     </Card>
   );
 }
 
 function SectionRoadmap({ fiche }: { fiche: any }) {
+  const [editTarget, setEditTarget] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+
+  const roadmapFields: EditField[] = [
+    { key: "action", label: "Action", type: "text", required: true },
+    { key: "description", label: "Description", type: "textarea" },
+    { key: "targetDate", label: "Date cible", type: "date", required: true },
+    { key: "ownerInitials", label: "Responsable", type: "text" },
+    { key: "status", label: "Statut", type: "select", required: true, options: [
+      { value: "planifie", label: "Planifié" },
+      { value: "en_cours", label: "En cours" },
+      { value: "fait", label: "Fait" },
+    ]},
+  ];
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Feuille de route 2-4 semaines</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">Feuille de route 2-4 semaines</CardTitle>
+          <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
+            <PlusCircle className="h-3 w-3" /> Ajouter
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-2">
         {fiche.roadmap.map((r: any) => (
@@ -638,9 +794,39 @@ function SectionRoadmap({ fiche }: { fiche: any }) {
                 </Badge>
               </div>
             </div>
+            <RowActions
+              label={r.action.slice(0, 30)}
+              onEdit={() => setEditTarget(r)}
+              onDuplicate={() => toast.success("Étape dupliquée", r.action.slice(0, 50))}
+              onDelete={() => setDeleteTarget(r)}
+            />
           </div>
         ))}
       </CardContent>
+
+      <EditModal
+        open={!!editTarget}
+        onOpenChange={(v) => !v && setEditTarget(null)}
+        title="Modifier l'étape"
+        description="§17.1.6 — Feuille de route à 2-4 semaines"
+        fields={roadmapFields.map((f) => ({ ...f, defaultValue: editTarget?.[f.key] }))}
+        onSave={(v) => toast.success("Étape mise à jour", v.action?.slice(0, 60))}
+      />
+      <EditModal
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        title="Ajouter une étape"
+        description="§17.1.6 — Action à 2-4 semaines"
+        fields={roadmapFields}
+        onSave={(v) => toast.success("Étape ajoutée", v.action?.slice(0, 60))}
+      />
+      <DeleteConfirm
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        title="Supprimer cette étape ?"
+        itemLabel={deleteTarget?.action}
+        onConfirm={() => toast.danger("Étape supprimée", deleteTarget?.action?.slice(0, 60))}
+      />
     </Card>
   );
 }
