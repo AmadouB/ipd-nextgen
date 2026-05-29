@@ -100,7 +100,7 @@ export default function LoginPage() {
               <label className="text-xs font-semibold">Email professionnel</label>
               <Input
                 type="email"
-                defaultValue="amadou.sall@pasteur.sn"
+                defaultValue="isf@pasteur.sn"
                 required
                 className="mt-1"
               />

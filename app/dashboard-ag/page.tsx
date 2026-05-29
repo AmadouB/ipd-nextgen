@@ -44,7 +44,7 @@ export default function DashboardAGPage() {
     <>
       <PageHeader
         eyebrow="Dashboard exécutif · §12"
-        title="Bonjour Dr. Sall — voici votre semaine en un coup d'œil"
+        title="Bonjour Pr. Fall — voici votre semaine en un coup d'œil"
         subtitle="Vue temps réel du portefeuille IPD. 12 projets actifs · 8 entités · 8 bailleurs partenaires."
         decisionMoment="Sur quoi dois-je arbitrer aujourd'hui ?"
         actions={

@@ -211,7 +211,7 @@ export const FICHES: Fiche[] = [
     meetingDate: MONDAY_NEXT,
     lockedAt: FRI_LOCK,
     signedDirector: { name: "Dr. Aminata Sy", initials: "AS", signedAt: "2026-05-22T15:30:00Z", hash: "a3f7e9...b21c" },
-    signedAG: { name: "Dr. Amadou Sall", initials: "AS", signedAt: "2026-05-25T11:48:00Z", hash: "e91d4c...7f8a" },
+    signedAG: { name: "Pr. Ibrahima Socé Fall", initials: "ISF", signedAt: "2026-05-25T11:48:00Z", hash: "e91d4c...7f8a" },
     priorities: [
       { id: "p1", num: 1, description: "Soumission ANSM Lassa Kit", horizon: "court", pillarId: "excellence", progress: 95 },
       { id: "p2", num: 2, description: "Validation kits dengue 4 serotypes", horizon: "moyen", pillarId: "excellence", progress: 70 },
