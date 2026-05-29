@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   Briefcase,
   CheckCircle2,
+  ChevronDown,
   Clock,
   FileSignature,
   Flag,
@@ -12,6 +14,15 @@ import {
   Target,
   XCircle,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import Link from "next/link";
 import { RowActions } from "@/components/crud/row-actions";
 import { EditModal, type EditField } from "@/components/crud/edit-modal";
 import { DeleteConfirm } from "@/components/crud/delete-confirm";
@@ -36,8 +47,25 @@ const RISK_LEVEL_COLOR = {
 };
 
 export default function DashboardPMPage() {
-  // Focus sur le projet MADIBA-2 (vue PM Ibrahima Faye)
-  const project = PROJECTS.find((p) => p.id === "madiba-2")!;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-[60vh] items-center justify-center text-muted-foreground">
+          Chargement…
+        </div>
+      }
+    >
+      <DashboardPMContent />
+    </Suspense>
+  );
+}
+
+function DashboardPMContent() {
+  const searchParams = useSearchParams();
+  const requestedId = searchParams.get("project");
+  // Projet sélectionné : ?project=… sinon MADIBA-2 par défaut
+  const project = PROJECTS.find((p) => p.id === requestedId) ??
+    PROJECTS.find((p) => p.id === "madiba-2")!;
   const risks = RISKS.filter((r) => r.projectId === project.id);
   const milestones = MILESTONES.filter((m) => m.projectId === project.id);
   const fiche = FICHES.find((f) => f.entityId === project.entityId);
@@ -75,6 +103,45 @@ export default function DashboardPMPage() {
         title={`Projet ${project.code} — ${project.name}`}
         subtitle={`Pilotage opérationnel du projet sur la semaine. Santé actuelle : ${project.health.toUpperCase()}.`}
         decisionMoment="Quel risque traiter en priorité ?"
+        actions={
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="bg-white/15 text-white hover:bg-white/25 gap-2"
+              >
+                <Briefcase className="h-4 w-4" />
+                Changer de projet
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuLabel>Sélectionner un projet</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {PROJECTS.map((p) => (
+                <DropdownMenuItem key={p.id} asChild>
+                  <Link
+                    href={`/dashboard-pm?project=${p.id}`}
+                    className={cn(
+                      "flex items-center gap-2 cursor-pointer",
+                      p.id === project.id && "bg-brand-pasteur/10"
+                    )}
+                  >
+                    <span className={cn("h-2 w-2 rounded-full shrink-0", healthBg[p.health])} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-mono text-muted-foreground">{p.code}</div>
+                      <div className="text-xs font-medium truncate">{p.name}</div>
+                    </div>
+                    {p.id === project.id && (
+                      <span className="text-[9px] text-brand-pasteur font-bold">ACTIF</span>
+                    )}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
       />
 
       <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

@@ -553,6 +553,7 @@ function HealthSegmentBody({ status }: { status: "green" | "amber" | "red" }) {
 /* ---------------- Project body ---------------- */
 function ProjectBody({ projectId }: { projectId: string }) {
   const p = PROJECTS.find((x) => x.id === projectId);
+  const close = useDrillDownStore((s) => s.close);
   if (!p) return <NotFound label={projectId} />;
   const entity = ENTITIES.find((e) => e.id === p.entityId);
   const bailleurs = BAILLEURS.filter((b) => p.bailleurIds.includes(b.id));
@@ -605,8 +606,8 @@ function ProjectBody({ projectId }: { projectId: string }) {
         </Section>
       )}
 
-      <Button variant="outline" size="sm" asChild className="w-full">
-        <Link href="/dashboard-pm">
+      <Button variant="primary" size="sm" asChild className="w-full">
+        <Link href={`/dashboard-pm?project=${p.id}`} onClick={close}>
           Ouvrir dashboard PM <ArrowRight className="h-3 w-3" />
         </Link>
       </Button>
