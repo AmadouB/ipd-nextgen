@@ -29,9 +29,9 @@ export function DeleteConfirm({ open, onOpenChange, title, description, itemLabe
             <AlertTriangle className="h-6 w-6 text-feedback-danger" />
           </div>
           <DialogTitle className="text-center">{title}</DialogTitle>
-          {description && (
-            <DialogDescription className="text-center pt-1">{description}</DialogDescription>
-          )}
+          <DialogDescription className={description ? "text-center pt-1" : "sr-only"}>
+            {description ?? "Confirmation de suppression — action irréversible."}
+          </DialogDescription>
           {itemLabel && (
             <div className="mt-2 rounded-md bg-muted/40 border p-2 text-center text-xs font-mono break-all">
               {itemLabel}

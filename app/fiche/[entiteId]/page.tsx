@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, use } from "react";
+import Link from "next/link";
 import {
   AlertOctagon,
   Calendar,
@@ -55,21 +56,46 @@ const SECTIONS = [
 
 export default function FichePage({ params }: { params: Promise<{ entiteId: string }> }) {
   const { entiteId } = use(params);
-  const entity = ENTITIES.find((e) => e.id === entiteId) ?? ENTITIES[0];
-  const fiche = ficheByEntity(entity.id);
-  const myEscalades = ESCALADES.filter((e) => e.entityId === entity.id);
-  const entityProjects = PROJECTS.filter((p) => p.entityId === entity.id);
+  const entity = ENTITIES.find((e) => e.id === entiteId);
+  const fiche = entity ? ficheByEntity(entity.id) : undefined;
+  const myEscalades = entity ? ESCALADES.filter((e) => e.entityId === entity.id) : [];
+  const entityProjects = entity ? PROJECTS.filter((p) => p.entityId === entity.id) : [];
   const entityRisks = RISKS.filter((r) => entityProjects.some((p) => p.id === r.projectId));
 
   const [active, setActive] = useState<typeof SECTIONS[number]["key"]>("priorites");
   const [escaladeOpen, setEscaladeOpen] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
 
+  if (!entity) {
+    return (
+      <div className="text-center py-16 space-y-4">
+        <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
+        <div className="space-y-1">
+          <div className="text-lg font-semibold">Entité introuvable</div>
+          <div className="text-sm text-muted-foreground">
+            Aucune entité ne correspond à l'identifiant <code className="font-mono">{entiteId}</code>.
+          </div>
+        </div>
+        <Button variant="primary" asChild>
+          <Link href="/mes-fiches">Voir toutes les fiches</Link>
+        </Button>
+      </div>
+    );
+  }
+
   if (!fiche) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-16 space-y-4">
         <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
-        <div className="mt-3 text-lg font-semibold">Aucune fiche pour cette entité</div>
+        <div className="space-y-1">
+          <div className="text-lg font-semibold">Aucune fiche pour {entity.shortName} cette semaine</div>
+          <div className="text-sm text-muted-foreground">
+            Le cycle hebdomadaire reprend mardi à l'ouverture du portail (§18.1).
+          </div>
+        </div>
+        <Button variant="outline" asChild>
+          <Link href="/mes-fiches">Retour à la liste</Link>
+        </Button>
       </div>
     );
   }

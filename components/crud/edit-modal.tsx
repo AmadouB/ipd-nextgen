@@ -69,7 +69,9 @@ export function EditModal({ open, onOpenChange, title, description, fields, onSa
             <Pencil className="h-5 w-5 text-brand-pasteur" />
             {title}
           </DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
+          <DialogDescription className={description ? undefined : "sr-only"}>
+            {description ?? "Formulaire de modification — auto-save CRDT."}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           {fields.map((f) => (

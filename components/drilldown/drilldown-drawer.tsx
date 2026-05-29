@@ -99,7 +99,9 @@ function Header({ payload }: { payload: NonNullable<ReturnType<typeof useDrillDo
         {title.eyebrow}
       </div>
       <SheetTitle className="text-white text-xl">{title.label}</SheetTitle>
-      {subtitle && <SheetDescription className="text-white/80">{subtitle}</SheetDescription>}
+      <SheetDescription className={subtitle ? "text-white/80" : "sr-only"}>
+        {subtitle ?? `Détail de ${title.eyebrow}`}
+      </SheetDescription>
     </SheetHeader>
   );
 }
